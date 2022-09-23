@@ -5,26 +5,32 @@ package gradle.java.elastic;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpHost;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
-
+import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.Settings;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.bean.CsvToBean;
 import au.com.bytecode.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import gradle.java.elastic.model.Column;
 
 public class Library {
-    public static void storeData(List<Column> colData) {
+    public static void storeData(List<Column> colData) throws UnknownHostException {
     	
     	RestClient restClient = RestClient.builder(
     		    new HttpHost("localhost", 9200)).build();
@@ -43,10 +49,17 @@ public class Library {
         	 count++;
          }
          
-        IndexResponse response = client.prepareIndex("test1","data","3").setSource(result).get();
-         
+        IndexResponse response = getClient().prepareIndex("test1","data","3").setSource(result).get();
         // Output response
     }
+    
+    public static Client getClient() throws UnknownHostException {
+        Client client = new PreBuiltTransportClient(
+                Settings.builder().put("client.transport.sniff", true)
+                        .put("cluster.name","elasticsearch").build())
+                .addTransportAddresses(new TransportAddress(InetAddress.getByName("host2"), 9300));
+        return client;
+}
     
     public static List<Column> extractCsv(){
     	Map<String, String> columnMapper=new HashMap<String,String>();
@@ -69,7 +82,7 @@ public class Library {
          // TODO Create a Sample csv
          try {
              csvReader = new CSVReader(new FileReader
-             ("D:\\EclipseWorkSpace\\CSVOperations\\StudentData.csv"));
+             ("C:\\Users\\vaibhav sharma\\Desktop\\bb-Ela\\gradle-java-elastic\\src\\main\\resources\\data.csv"));
          }
          catch (FileNotFoundException e) {
    
@@ -87,7 +100,7 @@ public class Library {
     	return columnList;
     }
     
-    public static void main(String args[]) {
+    public static void main(String args[]) throws UnknownHostException {
     	System.out.println("Working");
     	
     	// Extract data from CSV
